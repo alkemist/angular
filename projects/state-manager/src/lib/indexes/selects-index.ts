@@ -74,7 +74,7 @@ export class SelectsIndex<C extends Object = Object, S extends ValueRecord = any
 
   apply<T>(actionKey: string, actionFunction: StateActionFunction<S, T>, payload: T) {
     actionFunction.apply(actionFunction, [
-      new StateContext(this.state),
+      new StateContext<S>(this.state),
       payload
     ])
 
