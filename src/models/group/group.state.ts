@@ -18,12 +18,8 @@ namespace Group {
     enableLocalStorage: true
   })
   export class Store extends StateExtend {
-    static override stateKey = 'Groups';
-    override stateKey = 'Groups';
-
-    constructor() {
-      super();
-    }
+    //static override stateKey = 'Groups';
+    stateKey = 'Groups';
 
     @Select('all')
     static groups(state: GroupStateInterface): GroupInterface[] {

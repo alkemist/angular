@@ -12,6 +12,7 @@ import {
   StateActionWithoutPayloadDefinition,
   StateActionWithPayloadDefinition
 } from '../models/state-action-definition.interface';
+import { UnknownAction } from '../models/unknown-action.error';
 
 export class EventsIndex<C extends Object = Object, S extends ValueRecord = any, T = any> {
   private selects = new SmartMap<StateSelect<S>>();
@@ -100,6 +101,10 @@ export class EventsIndex<C extends Object = Object, S extends ValueRecord = any,
 
   apply(actionKey: string, payload?: T) {
     const action = this.actions.get(actionKey);
+
+    if (!action) {
+      throw new UnknownAction(actionKey);
+    }
 
     action.fn.apply(action.fn, [
       new StateContext<S>(this.state),

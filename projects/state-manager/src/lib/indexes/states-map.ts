@@ -5,7 +5,7 @@ import { StateActionFunction } from '../models/state-action-function.type';
 import { WritableSignal } from '@angular/core';
 import { EventsIndex } from "./events-index";
 import { StateActionClass } from '../models/state-action-class.interface';
-import { StateExtend } from '../models';
+import { StateClass, StateExtend } from '../models';
 import {
   StateActionWithoutPayloadDefinition,
   StateActionWithPayloadDefinition
@@ -62,7 +62,7 @@ export abstract class StatesMap {
     return <EventsIndex<C, S>>StatesMap.eventsByState.get(stateKey)
   }
 
-  static dispatch<C extends StateExtend, S extends ValueRecord>(state: C, actions: StateActionClass[]) {
+  static dispatch<C extends StateExtend, S extends ValueRecord>(state: StateClass<C>, actions: StateActionClass[]) {
     //const stateKeysToUpdate: string[] = [];
     const eventsIndex = StatesMap.getEventsIndex<C, S>(state.stateKey);
 

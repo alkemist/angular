@@ -1,5 +1,10 @@
 export abstract class StateExtend {
-  static stateKey: string = 'none';
-  stateKey: string = 'none';
+  static stateKey: string;
+  abstract stateKey: string;
 }
 
+export type StateClass<C extends StateExtend> = {
+  stateKey: string;
+
+  new(): C
+}
