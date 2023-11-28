@@ -3,17 +3,18 @@ import { StateConfiguration } from '../models/state-configuration.interface';
 import { StateSelectFunction } from '../models/state-select-function.type';
 import { StateActionFunction } from '../models/state-action-function.type';
 import { WritableSignal } from '@angular/core';
-import { SelectsIndex } from "./selects-index";
-import { UnknownAction } from '../models/unknown-action.error';
-import { StateActionIndex } from '../models/state-action-index.interface';
-import { StateActionDefinition } from '../models/state-action-definition.interface';
+import { EventsIndex } from "./events-index";
 import { StateActionClass } from '../models/state-action-class.interface';
+import { StateExtend } from '../models';
+import {
+  StateActionWithoutPayloadDefinition,
+  StateActionWithPayloadDefinition
+} from '../models/state-action-definition.interface';
 
 export abstract class StatesMap {
-  private static selectsByState = new Map<string, SelectsIndex>();
-  private static actionIndex = new Map<string, StateActionIndex>();
+  private static eventsByState = new Map<string, EventsIndex>();
 
-  static registerSelect<C extends Object, S extends ValueRecord, T>(
+  static registerSelect<C extends StateExtend, S extends ValueRecord, T>(
     stateKey: string,
     selectKey: string,
     selectFunction: StateSelectFunction<S, T>,
@@ -22,21 +23,18 @@ export abstract class StatesMap {
     let map = StatesMap.getOrCreate<C, S>(stateKey);
 
     map.setSelect(selectKey, selectFunction, path);
-    StatesMap.selectsByState.set(stateKey, map);
+    StatesMap.eventsByState.set(stateKey, map);
   }
 
-  static registerAction<A extends Object, S extends ValueRecord, T>(
+  static registerAction<A extends Object, C extends Object, S extends ValueRecord, T>(
     stateKey: string,
-    action: StateActionDefinition<A, T>,
+    action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
     actionFunction: StateActionFunction<S, T>,
   ) {
-    this.actionIndex.set(
-      action.name,
-      {
-        stateKey,
-        actionFunction
-      }
-    )
+    let map = StatesMap.getOrCreate<C, S>(stateKey);
+
+    map.setAction(action, actionFunction);
+    StatesMap.eventsByState.set(stateKey, map);
   }
 
   static registerObserver<C extends Object, S extends ValueRecord, T>(
@@ -47,56 +45,59 @@ export abstract class StatesMap {
   ) {
     let map = StatesMap.getOrCreate<C, S>(stateKey);
 
-    map.setObserver(selectKey, observerKey, observer);
-    StatesMap.selectsByState.set(stateKey, map);
+    map.setObserver(stateKey, selectKey, observerKey, observer);
+    StatesMap.eventsByState.set(stateKey, map);
   }
 
   static registerState<C extends Object, S extends ValueRecord>(
     stateKey: string,
-    configuration: StateConfiguration<C, S>
+    configuration: StateConfiguration<S>
   ) {
     let map = StatesMap.getOrCreate<C, S>(stateKey);
 
-    map.initContext(configuration);
+    map.initContext(stateKey, configuration);
   }
 
-  static getSelectsIndex<C extends Object, S extends ValueRecord>(stateKey: string) {
-    return <SelectsIndex<C, S>>StatesMap.selectsByState.get(stateKey)
+  static getEventsIndex<C extends Object, S extends ValueRecord>(stateKey: string) {
+    return <EventsIndex<C, S>>StatesMap.eventsByState.get(stateKey)
   }
 
-  static dispatch(actions: StateActionClass[]) {
-    const stateKeysToUpdate: string[] = [];
+  static dispatch<C extends StateExtend, S extends ValueRecord>(state: C, actions: StateActionClass[]) {
+    //const stateKeysToUpdate: string[] = [];
+    const eventsIndex = StatesMap.getEventsIndex<C, S>(state.stateKey);
 
-    actions.forEach(action => {
+    /*actions.forEach(action => {
       const actionKey = action.constructor.name;
-      const stateAction = StatesMap.actionIndex.get(actionKey);
+      const stateAction = StatesMap
 
       if (!stateAction) {
         throw new UnknownAction(actionKey)
       }
 
-      StatesMap.getSelectsIndex(stateAction.stateKey)
+      StatesMap.getEventsIndex(stateAction.stateKey)
         .apply(actionKey, stateAction.actionFunction, action.payload);
 
       if (stateKeysToUpdate.indexOf(stateAction.stateKey) === -1) {
         stateKeysToUpdate.push(stateAction.stateKey)
       }
+    })*/
+
+    actions.forEach(action => {
+      const actionKey = action.constructor.name;
+      eventsIndex.apply(actionKey, action.payload);
     })
 
-    stateKeysToUpdate.forEach(stateKey =>
-      StatesMap.getSelectsIndex(stateKey)
-        .update()
-    );
+    eventsIndex.update()
   }
 
   private static hasState(stateKey: string) {
-    return StatesMap.selectsByState.has(stateKey);
+    return StatesMap.eventsByState.has(stateKey);
   }
 
   private static getOrCreate<C extends Object, S extends ValueRecord>(stateKey: string) {
     return StatesMap.hasState(stateKey)
-      ? StatesMap.getSelectsIndex<C, S>(stateKey)
-      : new SelectsIndex<C, S>();
+      ? StatesMap.getEventsIndex<C, S>(stateKey)
+      : new EventsIndex<C, S>();
   }
 }
 

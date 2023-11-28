@@ -1,6 +1,6 @@
 import { ValueRecord } from "@alkemist/smart-tools";
 import { computed, Signal, WritableSignal } from '@angular/core';
-import { StateContext } from '../src/lib/models/state.context';
+import { StateContext } from '../src/lib/models/state-context';
 import { State } from '../src/lib/decorators/state.decorator';
 import { Select } from '../src/lib/decorators/state-select.decorator';
 import { Action } from '../src/lib/decorators/state-action.decorator';

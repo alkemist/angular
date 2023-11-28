@@ -1,10 +1,10 @@
-import { UserInterface } from './user.interface';
+import { GroupInterface } from './group.interface';
 
-namespace User {
+namespace Group {
   export class ActionAdd {
     static readonly log = "Add";
 
-    constructor(public payload: UserInterface) {
+    constructor(public payload: GroupInterface) {
     }
   }
 
@@ -16,4 +16,4 @@ namespace User {
   }
 }
 
-export { User };
+export { Group };

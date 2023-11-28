@@ -1,25 +1,35 @@
-import { Injectable, Type } from '@angular/core';
-import { StateActionClass } from './models/state-action-class.interface';
+import { Injectable } from '@angular/core';
 import { StatesMap } from './indexes/states-map';
 import { StateSelectFunction } from './models/state-select-function.type';
 import { ValueRecord } from '@alkemist/smart-tools';
+import { StateExtend } from './models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StateManager {
-  select<C extends Object, S extends ValueRecord, T>(
-    stateClass: Type<C>,
-    selectFunction: StateSelectFunction<S, T>
+  /*constructor(@Optional() configuration?: StateManagerConfiguration<any>) {
+    console.log('service configuration', configuration)
+  }*/
+
+  debug<C extends StateExtend, S extends ValueRecord>(
+    stateClass: StateExtend
   ) {
-    return StatesMap.getSelectsIndex<C, S>(stateClass.name).select<T>(selectFunction.name);
+    return StatesMap.getEventsIndex<C, S>(stateClass.stateKey)
   }
 
-  dispatch(actions: StateActionClass | StateActionClass[]) {
+  select<C extends StateExtend, S extends ValueRecord, T>(
+    stateClass: StateExtend,
+    selectFunction: StateSelectFunction<S, T>
+  ) {
+    return StatesMap.getEventsIndex<C, S>(stateClass.stateKey).select(selectFunction.name);
+  }
+
+  dispatch<C extends StateExtend>(state: C, actions: any | any[]) {
     if (!Array.isArray(actions)) {
       actions = [ actions ];
     }
 
-    StatesMap.dispatch(actions);
+    StatesMap.dispatch(state, actions);
   }
 }

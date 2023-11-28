@@ -1,7 +1,13 @@
 import { StateActionClass } from './state-action-class.interface';
 
-export interface StateActionDefinition<A extends Object = Object, T = any> {
+export interface StateActionWithPayloadDefinition<T = any> {
   log: string;
 
   new(payload: T): StateActionClass<T>;
+}
+
+export interface StateActionWithoutPayloadDefinition {
+  log: string;
+
+  new(): {};
 }

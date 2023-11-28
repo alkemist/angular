@@ -1,41 +1,46 @@
-/// <reference path="user.interface.ts" />
 import { ValueRecord } from '@alkemist/smart-tools'
-import { Select } from '@alkemist/ngx-state-manager/src/lib/decorators/state-select.decorator';
-import { Action } from '@alkemist/ngx-state-manager/src/lib/decorators/state-action.decorator';
-import { StateContext } from '@alkemist/ngx-state-manager/src/lib/models/state.context';
-import { State } from '@alkemist/ngx-state-manager/src/lib/decorators/state.decorator';
+import { Action, Select, State, StateContext, StateExtend } from '@alkemist/ngx-state-manager';
 import { UserInterface } from './user.interface';
-import { User as _User } from './user.action'
+import { User as UserAction } from "./user.action";
 
-export interface UserStateInterface extends ValueRecord {
-  users: UserInterface[]
+
+interface UserStateInterface extends ValueRecord {
+  all: UserInterface[]
 }
 
 namespace User {
-  export const ActionAdd = _User.Actions.Add;
-
   @State({
-    name: 'Users',
-    class: Store,
     defaults: <UserStateInterface>{
-      users: []
+      all: []
     },
     showLog: true,
     enableLocalStorage: true
   })
-  export class Store {
-    @Select('users')
-    static users(state: UserStateInterface): UserInterface[] {
-      return state.users;
+  export class Store extends StateExtend {
+    static override stateKey = 'Users';
+    override stateKey = 'Users';
+
+    constructor() {
+      super();
     }
 
-    @Action(ActionAdd)
-    aStringValueAction(context: StateContext<UserStateInterface>, payload: string) {
+    @Select('all')
+    static users(state: UserStateInterface): UserInterface[] {
+      return state.all;
+    }
+
+    @Action(UserAction.ActionAdd)
+    addUser(context: StateContext<UserStateInterface>, payload: UserInterface) {
+      context.addItem('all', payload);
+    }
+
+    @Action(UserAction.ActionReset)
+    reset(context: StateContext<UserStateInterface>, payload: UserInterface) {
       context.patchState({
-        aStringValue: payload
+        all: [],
       })
     }
   }
 }
 
-
+export { User };

@@ -1,9 +1,6 @@
-import { ValueKey, ValueRecord } from '@alkemist/smart-tools'
-import { Type } from '@angular/core';
+import { ValueKey } from '@alkemist/smart-tools'
 
-export interface StateConfiguration<C extends Object, S extends ValueRecord> {
-  name: string,
-  class: Type<C>,
+export interface StateConfiguration<S> {
   defaults: S,
   determineArrayIndexFn?: ((paths: ValueKey[]) => ValueKey) | undefined,
   enableLocalStorage?: boolean,

@@ -16,4 +16,5 @@ import { StateManagerModule } from '@alkemist/ngx-state-manager';
   bootstrap: [ AppComponent ]
 })
 export class AppModule {
+
 }

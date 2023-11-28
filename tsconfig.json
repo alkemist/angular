@@ -18,8 +18,8 @@
     "importHelpers": true,
     "target": "ES2022",
     "paths": {
-      "state-manager": [
-        "dist/state-manager"
+      "@alkemist/ngx-state-manager": [
+        "projects/state-manager/dist"
       ]
     },
     "module": "ES2022",
