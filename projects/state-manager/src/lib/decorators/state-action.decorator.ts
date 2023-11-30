@@ -14,7 +14,7 @@ export function StateAction<A extends Object, C extends StateExtend, CO extends 
   return <MethodDecorator>function (
     target: C,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<StateActionFunction<S, CO, T>>
+    descriptor: TypedPropertyDescriptor<StateActionFunction<S, CO>>
   ) {
     /*console.log('registerAction',
       (target.constructor as StateExtendClass<C>).getStateKey(),

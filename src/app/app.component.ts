@@ -25,7 +25,7 @@ export class AppComponent {
       name: `username ${ id }`
     };
 
-    this.store.dispatch(User.Store, new User.ActionAdd(user))
+    this.store.dispatchAdd(User.Store, user);
   }
 
   addGroup() {
@@ -39,7 +39,7 @@ export class AppComponent {
   }
 
   resetUsers() {
-    this.store.dispatch(User.Store, new User.ActionReset())
+    this.store.dispatchReset(User.Store)
   }
 
   resetGroups() {

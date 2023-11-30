@@ -1,7 +1,7 @@
 import { ValueKey, ValueRecord } from "@alkemist/smart-tools";
 import { CompareEngine } from '@alkemist/compare-engine';
 
-export class StateContext<S extends ValueRecord, I = unknown> {
+export class StateContext<S extends ValueRecord, I = any> {
 
   constructor(protected state: CompareEngine<S>) {
 
@@ -48,13 +48,13 @@ export class StateContext<S extends ValueRecord, I = unknown> {
     return this.setItems(paths, _items);
   }
 
-  setItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: I) {
+  remplaceOneItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: I) {
     const _items = this.getItems(paths);
     const items = _items.map(_item => selector(_item) ? item : _item);
     return this.setItems(paths, items);
   }
 
-  patchItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: Partial<I>) {
+  patchOneItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: Partial<I>) {
     const _items = this.getItems(paths);
     const items = _items.map(_item => selector(_item) ? {
       ..._item,

@@ -9,13 +9,36 @@ export class StateCrudContext<S extends StateCrud<I>, I> extends StateContext<S,
     super(state);
   }
 
+  replaceItem(paths: ValueKey | ValueKey[], itemToReplace: I) {
+    const compareValue = this.determineCompareValue(paths, itemToReplace);
+
+    return super.remplaceOneItem(paths,
+      (item) =>
+        compareValue === this.determineCompareValue(paths, item),
+      itemToReplace
+    )
+  }
+
+  patchItem(paths: ValueKey | ValueKey[], itemToPatch: Partial<I>) {
+    const compareValue = this.determineCompareValue(paths, itemToPatch);
+
+    return super.patchOneItem(paths,
+      (item) =>
+        compareValue === this.determineCompareValue(paths, item),
+      itemToPatch
+    )
+  }
+
   removeItem(paths: ValueKey | ValueKey[], itemToRemove: I) {
     const compareValue = this.determineCompareValue(paths, itemToRemove);
 
-    return super.removeOneItem(paths, (item) => compareValue === this.determineCompareValue(paths, item))
+    return super.removeOneItem(paths,
+      (item) =>
+        compareValue === this.determineCompareValue(paths, item)
+    )
   }
 
-  private determineCompareValue(_paths: ValueKey | ValueKey[], item: I) {
+  private determineCompareValue(_paths: ValueKey | ValueKey[], item: I | Partial<I>) {
     const paths = TypeHelper.isArray(_paths) ? _paths : [ _paths ];
     let compareValue: unknown | I = item;
 

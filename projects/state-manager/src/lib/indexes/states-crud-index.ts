@@ -13,18 +13,50 @@ export class StatesCrudIndex extends StatesIndex<StateCrudManager> {
     currentState.import(stateManager);
   }
 
-  dispatchCrud<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+  dispatchFill<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
     stateClass: StateExtendClass<C>,
-    actions: 'add'[],
+    payload: I[],
+  ) {
+    this.getState(stateClass).dispatchFill(payload).update()
+  }
+
+  dispatchAdd<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
     payload: I,
   ) {
+    this.getState(stateClass).dispatchAdd(payload).update()
+  }
+
+  dispatchReplace<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I,
+  ) {
+    this.getState(stateClass).dispatchReplace(payload).update()
+  }
+
+  dispatchUpdate<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: Partial<I>,
+  ) {
+    this.getState(stateClass).dispatchUpdate(payload).update()
+  }
+
+  dispatchRemove<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I,
+  ) {
+    this.getState(stateClass).dispatchRemove(payload).update()
+  }
+
+  dispatchReset<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+  ) {
+    this.getState(stateClass).dispatchReset().update()
+  }
+
+  private getState<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>
+  (stateClass: StateExtendClass<C>) {
     const stateKey = stateClass.getStateKey();
-    const states = this.getState<C, S>(stateKey);
-
-    actions.forEach(actionKey => {
-      states.apply(actionKey, payload);
-    })
-
-    states.update()
+    return this.getStateByKey<C, S>(stateKey);
   }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { StatesHelper } from './helpers/states-helper';
 import { StateSelectFunction } from './models/state-select-function.type';
 import { ValueRecord } from '@alkemist/smart-tools';
-import { StateExtend } from './models';
+import { StateCrud, StateCrudExtend, StateExtend } from './models';
 import { StateExtendClass } from './models/state-extend-class.type';
 
 @Injectable({
@@ -33,6 +33,47 @@ export class StateManagerService {
       actions = [ actions ];
     }
 
-    StatesHelper.dispatch(stateClass, actions);
+    return StatesHelper.dispatch(stateClass, actions);
+  }
+
+  dispatchFill<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I[]
+  ) {
+    return StatesHelper.dispatchFill(stateClass, payload);
+  }
+
+  dispatchAdd<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I
+  ) {
+    return StatesHelper.dispatchAdd(stateClass, payload);
+  }
+
+  dispatchReplace<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I
+  ) {
+    return StatesHelper.dispatchReplace(stateClass, payload);
+  }
+
+  dispatchUpdate<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: Partial<I>
+  ) {
+    return StatesHelper.dispatchUpdate(stateClass, payload);
+  }
+
+  dispatchRemove<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+    payload: I
+  ) {
+    return StatesHelper.dispatchRemove(stateClass, payload);
+  }
+
+  dispatchReset<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
+    stateClass: StateExtendClass<C>,
+  ) {
+    return StatesHelper.dispatchReset(stateClass);
   }
 }

@@ -11,7 +11,7 @@ interface GroupStateInterface extends ValueRecord {
 
 namespace Group {
   @StateDefinition({
-    defaults: <GroupStateInterface>{
+    defaults: {
       all: []
     },
     showLog: true,

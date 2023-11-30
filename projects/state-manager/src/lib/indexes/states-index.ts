@@ -12,10 +12,13 @@ import { Type, WritableSignal } from '@angular/core';
 import { StateConfiguration } from '../models/state-configuration.interface';
 import { StateActionClass } from '../models/state-action-class.interface';
 
-export class StatesIndex<M extends StateManager = StateManager> {
+export class StatesIndex<M extends StateManager = StateManager, STATE extends ValueRecord = any, CONTEXT extends StateContext<STATE> = any> {
   protected states = new Map<string, M>();
 
-  constructor(private factory: Type<M>) {
+  constructor(
+    private stateManagerFactory: Type<M>,
+    private stateContextFactory: Type<CONTEXT>
+  ) {
   }
 
   registerSelect<C extends StateExtend, S extends ValueRecord, T>(
@@ -33,7 +36,7 @@ export class StatesIndex<M extends StateManager = StateManager> {
   registerAction<A extends Object, C extends StateExtend, CO extends StateContext<S>, S extends ValueRecord, T>(
     state: C,
     action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
-    actionFunction: StateActionFunction<S, CO, T>,
+    actionFunction: StateActionFunction<S, CO>,
   ) {
     const stateKey = (state.constructor as StateExtendClass<C>).getStateKey();
     let map = this.getOrCreate<C, S>(stateKey);
@@ -63,21 +66,7 @@ export class StatesIndex<M extends StateManager = StateManager> {
     map.initContext(stateKey, configuration);
   }
 
-  /*registerStateCrud<C extends StateExtend, S extends ValueRecord>(
-    stateClass: StateExtendClass<C>,
-    configuration: StateCrudConfiguration<S>
-  ) {
-    const stateKey = stateClass.getStateKey();
-    let map = this.getOrCreate<C, S>(stateKey);
-
-    /*if (!(map instanceof StateCrudManager)) {
-      map = new StateCrudManager();
-    }*/
-
-  //map.initContext(stateKey, configuration);
-  //}
-
-  getState<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
+  getStateByKey<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
     return this.states.get(stateKey) as M;
   }
 
@@ -87,7 +76,7 @@ export class StatesIndex<M extends StateManager = StateManager> {
   ) {
     //const stateKeysToUpdate: string[] = [];
     const stateKey = stateClass.getStateKey();
-    const states = this.getState<C, S>(stateKey);
+    const state = this.getStateByKey<C, S>(stateKey);
 
     /*actions.forEach(action => {
       const actionKey = action.constructor.name;
@@ -107,10 +96,10 @@ export class StatesIndex<M extends StateManager = StateManager> {
 
     actions.forEach(action => {
       const actionKey = action.constructor.name;
-      states.apply(actionKey, action.payload);
+      state.apply(actionKey, action.payload);
     })
 
-    states.update()
+    state.update()
   }
 
   hasState(stateKey: string) {
@@ -123,10 +112,10 @@ export class StatesIndex<M extends StateManager = StateManager> {
 
   protected getOrCreate<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
     if (this.hasState(stateKey)) {
-      return this.getState<C, S>(stateKey)
+      return this.getStateByKey<C, S>(stateKey)
     }
 
-    const state = new this.factory();
+    const state = new this.stateManagerFactory(this.stateContextFactory);
     this.states.set(stateKey, state);
 
     return state

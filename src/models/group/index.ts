@@ -4,7 +4,7 @@ import { Group as GroupStore } from './group.state'
 import { Group as GroupAction } from './group.action'
 import { Group as GroupModel } from './group.model'
 
-export module Group {
+export namespace Group {
   export class Model extends GroupModel.Model {
 
   }

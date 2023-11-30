@@ -3,12 +3,12 @@ import { UserInterface } from './user.interface';
 
 
 interface UserStateInterface extends StateCrud<UserInterface> {
-  all: UserInterface[]
+
 }
 
 namespace User {
   @StateCrudDefinition({
-    defaults: <UserStateInterface>{
+    defaults: {
       all: []
     },
     determineArrayIndexFn: () => 'id',
@@ -22,16 +22,6 @@ namespace User {
     static users(state: UserStateInterface): UserInterface[] {
       return state.all;
     }
-
-    /*@StateAction(UserAction.ActionAdd)
-    override add(context: StateCrudContext<UserStateInterface, UserInterface>, payload: UserInterface) {
-      super.add(context, payload);
-    }
-
-    @StateAction(UserAction.ActionReset)
-    override reset(context: StateCrudContext<UserStateInterface, UserInterface>) {
-      super.reset(context)
-    }*/
   }
 }
 

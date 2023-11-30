@@ -24,7 +24,7 @@ export class StateManager<
   protected selects = new SmartMap<StateSelect<STATE>>();
   protected actions = new SmartMap<{
     log: string,
-    fn: StateActionFunction<STATE, CONTEXT, ITEM>
+    fn: StateActionFunction<STATE, CONTEXT>
   }>();
   protected configuration!: StateConfiguration<STATE>;
   protected state!: CompareEngine<STATE>;
@@ -54,8 +54,8 @@ export class StateManager<
 
     this.state = new CompareEngine<STATE>(
       configuration.determineArrayIndexFn,
-      TypeHelper.deepClone(defaultsValue),
-      TypeHelper.deepClone(defaultsValue),
+      defaultsValue,
+      defaultsValue,
     );
 
     if (this.configuration.showLog) {
@@ -99,14 +99,14 @@ export class StateManager<
       .update(this.getState(stateKey))
   }
 
-  setAction(action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<STATE, CONTEXT, ITEM>) {
+  setAction(action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<STATE, CONTEXT>) {
     this.actions.set(action.name, {
       log: action.log,
       fn: actionFunction
     });
   }
 
-  select(selectKey: string): ITEM {
+  select(selectKey: string): unknown {
     return (<StateSelect<STATE, ITEM>>this.selects.get(selectKey))
       .getValue(this.getState())
   }
@@ -115,7 +115,7 @@ export class StateManager<
     return this.actions.get(actionKey);
   }
 
-  apply(actionKey: string, payload?: ITEM) {
+  apply(actionKey: string, payload?: any) {
     const action = this.getAction(actionKey);
 
     if (!action) {
@@ -170,7 +170,7 @@ export class StateManager<
     }
   }
 
-  protected actionApply(actionFn: StateActionFunction<STATE, CONTEXT, ITEM>, payload?: ITEM) {
+  protected actionApply(actionFn: StateActionFunction<STATE, CONTEXT>, payload?: ITEM) {
     actionFn.apply(actionFn, [
       new this.contextFactory(this.state),
       payload
