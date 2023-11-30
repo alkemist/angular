@@ -1,5 +1,5 @@
-import { Component, signal, WritableSignal } from '@angular/core';
-import { Observe, StateManager } from '@alkemist/ngx-state-manager';
+import { Component, WritableSignal } from '@angular/core';
+import { StateManagerService, StateObserve } from '@alkemist/ngx-state-manager';
 import { User, UserInterface } from '../models/user';
 import { Group, GroupInterface } from '../models/group';
 
@@ -9,13 +9,13 @@ import { Group, GroupInterface } from '../models/group';
   styleUrls: [ './app.component.scss' ]
 })
 export class AppComponent {
-  @Observe(User.Store, User.Store.users)
+  @StateObserve(User.Store, User.Store.users)
   users!: WritableSignal<UserInterface[]>;
 
-  /*@Observe(Group.Store, Group.Store.groups)*/
-  groups: WritableSignal<GroupInterface[]> = signal([]);
+  @StateObserve(Group.Store, Group.Store.groups)
+  groups!: WritableSignal<GroupInterface[]>;
 
-  constructor(private store: StateManager) {
+  constructor(private store: StateManagerService) {
   }
 
   addUser() {
@@ -29,7 +29,7 @@ export class AppComponent {
   }
 
   addGroup() {
-    const id = 0; //this.groups().length + 1;
+    const id = this.groups().length + 1;
     const group = {
       id,
       name: `group ${ id }`

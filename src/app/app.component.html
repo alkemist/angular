@@ -1,22 +1,3 @@
-<h1>Users</h1>
-<ul>
-  <li *ngFor="let user of users()">
-    {{ user.id }} : {{ user.name }}
-  </li>
-</ul>
-<div *ngIf="users().length === 0">
-  No users
-</div>
-
-<h1>Groups</h1>
-<ul>
-  <li *ngFor="let group of groups()">
-    {{ group.id }} : {{ group.name }}
-  </li>
-</ul>
-<div *ngIf="groups().length === 0">
-  No groups
-</div>
 <div style="padding:20px">
   <button (click)="addUser()">Add user</button>
   <button (click)="addGroup()">Add group</button>
@@ -26,4 +7,28 @@
   <br/>
   <button (click)="debugUsers()">Debug users</button>
   <button (click)="debugGroups()">Debug groups</button>
+</div>
+
+<div>
+  <h1>Users</h1>
+  <ul>
+    <li *ngFor="let user of users()">
+      {{ user.id }} : {{ user.name }}
+    </li>
+  </ul>
+  <div *ngIf="users().length === 0">
+    No users
+  </div>
+</div>
+
+<div>
+  <h1>Groups</h1>
+  <ul>
+    <li *ngFor="let group of groups()">
+      {{ group.id }} : {{ group.name }}
+    </li>
+  </ul>
+  <div *ngIf="groups().length === 0">
+    No groups
+  </div>
 </div>

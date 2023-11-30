@@ -3,8 +3,8 @@ import { StateSelect } from "../models/state-select";
 import { StateConfiguration } from "../models/state-configuration.interface";
 import { StateSelectFunction } from "../models/state-select-function.type";
 import { StateActionFunction } from "../models/state-action-function.type";
-import { WritableSignal } from "@angular/core";
-import { StateContext } from '../models';
+import { Type, WritableSignal } from "@angular/core";
+import { StateContext, StateExtend } from '../models';
 import { CompareEngine } from '@alkemist/compare-engine';
 import { NotInitializedStateError } from '../models/not-initialized-state.error';
 import { UnknownSelect } from '../models/unknown-select.error';
@@ -13,25 +13,37 @@ import {
   StateActionWithPayloadDefinition
 } from '../models/state-action-definition.interface';
 import { UnknownAction } from '../models/unknown-action.error';
+import { StatesHelper } from '../helpers/states-helper';
 
-export class EventsIndex<C extends Object = Object, S extends ValueRecord = any, T = any> {
-  private selects = new SmartMap<StateSelect<S>>();
-  private actions = new SmartMap<{
+export class StateManager<
+  CLASS extends StateExtend = any,
+  STATE extends ValueRecord = any,
+  CONTEXT extends StateContext<STATE> = any,
+  ITEM = any
+> {
+  protected selects = new SmartMap<StateSelect<STATE>>();
+  protected actions = new SmartMap<{
     log: string,
-    fn: StateActionFunction<S, T>
+    fn: StateActionFunction<STATE, CONTEXT, ITEM>
   }>();
-  private configuration!: StateConfiguration<S>;
-  private state!: CompareEngine<S>;
-  private stateKey!: string;
+  protected configuration!: StateConfiguration<STATE>;
+  protected state!: CompareEngine<STATE>;
+  protected stateKey!: string;
+  protected storageKey!: string;
 
-  initContext(stateKey: string, configuration: StateConfiguration<S>) {
+  constructor(private contextFactory: Type<CONTEXT>) {
+  }
+
+  initContext(stateKey: string, configuration: StateConfiguration<STATE>) {
     this.stateKey = stateKey;
+    this.storageKey = `${ StatesHelper.prefix }${ this.stateKey }`;
+
     this.configuration = configuration;
 
     let defaultsValue = configuration.defaults;
 
     if (configuration.enableLocalStorage) {
-      const stored = localStorage.getItem(this.stateKey);
+      const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         defaultsValue = {
           ...defaultsValue,
@@ -40,7 +52,7 @@ export class EventsIndex<C extends Object = Object, S extends ValueRecord = any,
       }
     }
 
-    this.state = new CompareEngine<S>(
+    this.state = new CompareEngine<STATE>(
       configuration.determineArrayIndexFn,
       TypeHelper.deepClone(defaultsValue),
       TypeHelper.deepClone(defaultsValue),
@@ -60,12 +72,12 @@ export class EventsIndex<C extends Object = Object, S extends ValueRecord = any,
       throw new NotInitializedStateError(stateKey ?? 'unknown')
     }
 
-    return <S>this.state.rightValue;
+    return <STATE>this.state.rightValue;
   }
 
   setSelect<T>(
     selectKey: string,
-    selectFunction: StateSelectFunction<S, T>,
+    selectFunction: StateSelectFunction<STATE, T>,
     path?: ValueKey | ValueKey[]
   ) {
     const stateSelect = new StateSelect(selectFunction, path);
@@ -87,29 +99,30 @@ export class EventsIndex<C extends Object = Object, S extends ValueRecord = any,
       .update(this.getState(stateKey))
   }
 
-  setAction(action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<S, T>) {
+  setAction(action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<STATE, CONTEXT, ITEM>) {
     this.actions.set(action.name, {
       log: action.log,
       fn: actionFunction
     });
   }
 
-  select(selectKey: string): T {
-    return (<StateSelect<S, T>>this.selects.get(selectKey))
+  select(selectKey: string): ITEM {
+    return (<StateSelect<STATE, ITEM>>this.selects.get(selectKey))
       .getValue(this.getState())
   }
 
-  apply(actionKey: string, payload?: T) {
-    const action = this.actions.get(actionKey);
+  getAction(actionKey: string) {
+    return this.actions.get(actionKey);
+  }
+
+  apply(actionKey: string, payload?: ITEM) {
+    const action = this.getAction(actionKey);
 
     if (!action) {
       throw new UnknownAction(actionKey);
     }
 
-    action.fn.apply(action.fn, [
-      new StateContext<S>(this.state),
-      payload
-    ])
+    this.actionApply(action.fn, payload);
 
     if (this.configuration.showLog) {
       const logs = [];
@@ -149,11 +162,18 @@ export class EventsIndex<C extends Object = Object, S extends ValueRecord = any,
 
     if (this.configuration.enableLocalStorage) {
       localStorage.setItem(
-        this.stateKey,
+        this.storageKey,
         JSON.stringify(
           this.state.leftValue
         )
       );
     }
+  }
+
+  protected actionApply(actionFn: StateActionFunction<STATE, CONTEXT, ITEM>, payload?: ITEM) {
+    actionFn.apply(actionFn, [
+      new this.contextFactory(this.state),
+      payload
+    ])
   }
 }

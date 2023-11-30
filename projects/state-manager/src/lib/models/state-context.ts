@@ -1,9 +1,9 @@
 import { ValueKey, ValueRecord } from "@alkemist/smart-tools";
 import { CompareEngine } from '@alkemist/compare-engine';
 
-export class StateContext<S extends ValueRecord> {
+export class StateContext<S extends ValueRecord, I = unknown> {
 
-  constructor(private state: CompareEngine<S>) {
+  constructor(protected state: CompareEngine<S>) {
 
   }
 
@@ -16,7 +16,7 @@ export class StateContext<S extends ValueRecord> {
     this.state.updateCompareIndex();
   }
 
-  setInState(paths: ValueKey[] | ValueKey, val: unknown) {
+  setInState(paths: ValueKey[] | ValueKey, val: I) {
     this.state.updateInRight(val, paths);
     this.state.updateCompareIndex();
   }
@@ -28,34 +28,34 @@ export class StateContext<S extends ValueRecord> {
     });
   }
 
-  patchInState<T>(paths: ValueKey[] | ValueKey, val: T) {
-    const currentVal = this.getItems<T>(paths);
+  patchInState(paths: ValueKey[] | ValueKey, val: I) {
+    const currentVal = this.getItems(paths);
     this.state.updateInRight({
       ...currentVal,
       ...val
     }, paths);
   }
 
-  addItem<T>(paths: ValueKey[] | ValueKey, item: T) {
-    const _items = this.getItems<T>(paths);
+  addItem(paths: ValueKey[] | ValueKey, item: I) {
+    const _items = this.getItems(paths);
     _items.push(item);
     return this.setItems(paths, _items);
   }
 
-  addItems<T>(paths: ValueKey[] | ValueKey, items: T[]) {
-    const _items = this.getItems<T>(paths);
+  addItems(paths: ValueKey[] | ValueKey, items: I[]) {
+    const _items = this.getItems(paths);
     _items.push(...items);
     return this.setItems(paths, _items);
   }
 
-  setItem<T>(paths: ValueKey[] | ValueKey, selector: (item: T) => boolean, item: T) {
-    const _items = this.getItems<T>(paths);
+  setItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: I) {
+    const _items = this.getItems(paths);
     const items = _items.map(_item => selector(_item) ? item : _item);
     return this.setItems(paths, items);
   }
 
-  patchItem<T>(paths: ValueKey[] | ValueKey, selector: (item: T) => boolean, item: Partial<T>) {
-    const _items = this.getItems<T>(paths);
+  patchItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean, item: Partial<I>) {
+    const _items = this.getItems(paths);
     const items = _items.map(_item => selector(_item) ? {
       ..._item,
       ...item
@@ -63,17 +63,17 @@ export class StateContext<S extends ValueRecord> {
     return this.setItems(paths, items);
   }
 
-  removeItem<T>(paths: ValueKey[] | ValueKey, selector: (item: T) => boolean) {
-    const _items = this.getItems<T>(paths);
+  removeOneItem(paths: ValueKey[] | ValueKey, selector: (item: I) => boolean) {
+    const _items = this.getItems(paths);
     const items = _items.filter(item => !selector(item));
     return this.setItems(paths, items);
   }
 
-  private getItems<T>(paths: ValueKey[] | ValueKey) {
-    return this.state.getInRight<T[]>(paths);
+  protected getItems(paths: ValueKey[] | ValueKey) {
+    return this.state.getInRight<I[]>(paths);
   }
 
-  private setItems<T>(paths: ValueKey[] | ValueKey, items: T[]) {
+  protected setItems<T>(paths: ValueKey[] | ValueKey, items: T[]) {
     this.state.updateInRight(items, paths);
     return items;
   }

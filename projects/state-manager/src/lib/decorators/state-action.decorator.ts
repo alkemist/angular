@@ -5,25 +5,29 @@ import {
   StateActionWithoutPayloadDefinition,
   StateActionWithPayloadDefinition
 } from '../models/state-action-definition.interface';
-import { StateExtend } from '../models';
-import { StatesMap } from '../indexes/states-map';
+import { StateContext, StateExtend } from '../models';
+import { StatesHelper } from '../helpers/states-helper';
 
-export function Action<A extends Object, C extends StateExtend, S extends ValueRecord, T>(
+export function StateAction<A extends Object, C extends StateExtend, CO extends StateContext<S>, S extends ValueRecord, T>(
   action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
 ): MethodDecorator {
   return <MethodDecorator>function (
     target: C,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<StateActionFunction<S, T>>
+    descriptor: TypedPropertyDescriptor<StateActionFunction<S, CO, T>>
   ) {
-    const stateKey = (new (target.constructor as any)).stateKey;
+    /*console.log('registerAction',
+      (target.constructor as StateExtendClass<C>).getStateKey(),
+      action.name,
+      target,
+    )*/
 
-    StatesMap.registerAction<A, C, S, T>(
-      stateKey,
+    StatesHelper.registerAction<A, C, CO, S, T>(
+      target,
       action,
       descriptor.value!,
     );
 
-    return Reflect.getMetadata(Symbol("Action"), target, propertyKey);
+    return Reflect.getMetadata(Symbol("StateAction"), target, propertyKey);
   };
 }

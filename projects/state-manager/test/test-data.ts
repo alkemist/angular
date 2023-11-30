@@ -1,11 +1,9 @@
 import { ValueRecord } from "@alkemist/smart-tools";
 import { computed, Signal, WritableSignal } from '@angular/core';
-import { StateContext } from '../src/lib/models/state-context';
-import { State } from '../src/lib/decorators/state.decorator';
-import { Select } from '../src/lib/decorators/state-select.decorator';
-import { Action } from '../src/lib/decorators/state-action.decorator';
-import { Observe } from '../src/lib/decorators/state-observe.decorator';
-import { StateManager } from '../src/lib/state-manager.service';
+import { StateContext, StateExtend } from '../src/lib/models';
+import { StateAction, StateDefinition, StateObserve, StateSelect } from '../src/lib/decorators';
+import { StatesHelper } from '../src/lib/helpers/states-helper';
+import { StateManagerService } from '../src/lib/state-manager.service';
 
 export interface UserInterface {
   id: number,
@@ -19,6 +17,7 @@ export interface ExampleStateInterface extends ValueRecord {
 }
 
 export const exampleStateName = 'ExampleState'
+export const exampleStorageName = `${ StatesHelper.prefix }${ exampleStateName }`;
 export const aStringValueDefault = 'init';
 export const anObjectValueDefault = null;
 export const aBooleanValueDefault = false;
@@ -46,9 +45,7 @@ export namespace Example {
   }
 }
 
-@State({
-  name: 'ExampleState',
-  class: ExampleState,
+@StateDefinition({
   defaults: <ExampleStateInterface>{
     aStringValue: aStringValueDefault,
     anObjectValue: anObjectValueDefault,
@@ -57,30 +54,32 @@ export namespace Example {
   showLog: true,
   enableLocalStorage: true
 })
-export class ExampleState {
-  @Select('aStringValue')
+export class ExampleState extends StateExtend {
+  stateKey = exampleStateName;
+
+  @StateSelect('aStringValue')
   static aStringValueSelector(state: ExampleStateInterface): string {
     return state.aStringValue;
   }
 
-  @Select('anObjectValue')
+  @StateSelect('anObjectValue')
   static anObjectValueSelector(state: ExampleStateInterface): UserInterface | null {
     return state.anObjectValue;
   }
 
-  @Select('aBooleanValue')
+  @StateSelect('aBooleanValue')
   static aBooleanValueSelector(state: ExampleStateInterface): boolean {
     return state.aBooleanValue;
   }
 
-  @Action(Example.aStringValueAction)
+  @StateAction(Example.aStringValueAction)
   aStringValueAction(context: StateContext<ExampleStateInterface>, payload: string) {
     context.patchState({
       aStringValue: payload
     })
   }
 
-  @Action(Example.aObjectValueAction)
+  @StateAction(Example.aObjectValueAction)
   aObjectValueAction(context: StateContext<ExampleStateInterface>, payload: UserInterface) {
     context.patchState({
       anObjectValue: payload
@@ -89,18 +88,18 @@ export class ExampleState {
 }
 
 export class ExampleComponent {
-  @Observe(ExampleState, ExampleState.aStringValueSelector)
+  @StateObserve(ExampleState, ExampleState.aStringValueSelector)
   aStringValueObserver!: WritableSignal<string>;
 
-  @Observe(ExampleState, ExampleState.anObjectValueSelector)
+  @StateObserve(ExampleState, ExampleState.anObjectValueSelector)
   anObjectValueObserver!: WritableSignal<UserInterface | null>;
 
-  @Observe(ExampleState, ExampleState.aBooleanValueSelector)
+  @StateObserve(ExampleState, ExampleState.aBooleanValueSelector)
   aBooleanValueObserver!: WritableSignal<boolean>;
 
   aStringValueComputed: Signal<string>;
 
-  constructor(private stateManager: StateManager, private userService: UserService) {
+  constructor(private stateManager: StateManagerService, private userService: UserService) {
     this.aStringValueComputed = computed(() => {
       this.onChange(this.aStringValueObserver());
       return this.aStringValueObserver();
@@ -117,6 +116,7 @@ export class ExampleComponent {
 
   dispatchStringValue(value: string) {
     this.stateManager.dispatch(
+      ExampleState,
       new Example.aStringValueAction(value)
     )
   }
@@ -127,7 +127,7 @@ export class ExampleComponent {
 }
 
 export class UserService {
-  constructor(private stateManager: StateManager) {
+  constructor(private stateManager: StateManagerService) {
   }
 
   getLoggedUser(user: UserInterface) {
@@ -139,6 +139,7 @@ export class UserService {
       const userResponse: UserInterface = await this.getLoggedUser(user);
 
       this.stateManager.dispatch(
+        ExampleState,
         new Example.aObjectValueAction(userResponse)
       )
       resolve();

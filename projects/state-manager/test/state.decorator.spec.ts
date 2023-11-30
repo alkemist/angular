@@ -4,12 +4,13 @@ import {
   aStringValueDefault,
   Example,
   ExampleComponent,
-  exampleStateName,
+  ExampleState,
+  exampleStorageName,
   UserInterface,
   UserService
 } from './test-data.js';
 import { effect, Injector } from '@angular/core';
-import { StateManager } from '../src/lib/state-manager.service';
+import { StateManagerService } from '../src/lib/state-manager.service';
 import { UnknownAction } from '../src/lib/models/unknown-action.error';
 import { setUpSignalTesting, SignalTesting } from '../../../test/setup-effect';
 
@@ -26,7 +27,7 @@ describe("State Decorator", () => {
 
   let exampleComponent: ExampleComponent;
   let userService: UserService;
-  let stateManager: StateManager;
+  let stateManager: StateManagerService;
 
   const aStringValueTest = 'test';
   const aObjectValueTest: UserInterface = {
@@ -43,7 +44,7 @@ describe("State Decorator", () => {
     setLocalStorageSpy = jest.spyOn(localStorage, 'setItem');
     getLocalStorageSpy = jest.spyOn(localStorage, 'getItem');
 
-    stateManager = new StateManager();
+    stateManager = new StateManagerService();
     userService = new UserService(stateManager);
     exampleComponent = new ExampleComponent(stateManager, userService);
     onChangeSpy = jest.spyOn(exampleComponent, 'onChange');
@@ -79,7 +80,7 @@ describe("State Decorator", () => {
       expect(aStringValueEffect).toEqual(aStringValueTest);
       expect(onChangeSpy).toBeCalledTimes(1);
       expect(setLocalStorageSpy).toBeCalledTimes(1);
-      expect(setLocalStorageSpy).toBeCalledWith(exampleStateName,
+      expect(setLocalStorageSpy).toBeCalledWith(exampleStorageName,
         `{` +
         `\"aStringValue\":\"${ aStringValueTest }\",` +
         `\"anObjectValue\":${ anObjectValueDefault },` +
@@ -104,7 +105,7 @@ describe("State Decorator", () => {
 
     expect(exampleComponent.anObjectValueObserver()).toEqual(aObjectValueTest);
     expect(setLocalStorageSpy).toBeCalledTimes(1);
-    expect(setLocalStorageSpy).toBeCalledWith(exampleStateName,
+    expect(setLocalStorageSpy).toBeCalledWith(exampleStorageName,
       `{` +
       `\"aStringValue\":\"${ aStringValueTest }\",` +
       `\"anObjectValue\":{\"name\":\"${ aObjectValueTest.name }\",\"id\":${ aObjectValueTest.id }},` +
@@ -119,7 +120,7 @@ describe("State Decorator", () => {
 
   it('should throw errors', () => {
     expect(() => {
-      stateManager.dispatch(new Example.aUnknownValueAction(''));
+      stateManager.dispatch(ExampleState, new Example.aUnknownValueAction(''));
     }).toThrow(new UnknownAction('aUnknownValueAction'));
   })
 
