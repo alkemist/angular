@@ -8,13 +8,18 @@ import {
 import { StateContext, StateExtend } from '../models';
 import { StatesHelper } from '../helpers/states-helper';
 
-export function StateAction<A extends Object, C extends StateExtend, CO extends StateContext<S>, S extends ValueRecord, T>(
-  action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
+export function StateAction<
+  STATE extends StateExtend,
+  CONTEXT extends StateContext<DATA>,
+  DATA extends ValueRecord,
+  ITEM
+>(
+  action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition,
 ): MethodDecorator {
   return <MethodDecorator>function (
-    target: C,
+    target: STATE,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<StateActionFunction<S, CO>>
+    descriptor: TypedPropertyDescriptor<StateActionFunction<DATA, CONTEXT>>
   ) {
     /*console.log('registerAction',
       (target.constructor as StateExtendClass<C>).getStateKey(),
@@ -22,7 +27,7 @@ export function StateAction<A extends Object, C extends StateExtend, CO extends 
       target,
     )*/
 
-    StatesHelper.registerAction<A, C, CO, S, T>(
+    StatesHelper.registerAction<STATE, CONTEXT, DATA, ITEM>(
       target,
       action,
       descriptor.value!,

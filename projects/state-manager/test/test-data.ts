@@ -1,13 +1,15 @@
 import { ValueRecord } from "@alkemist/smart-tools";
-import { computed, Signal, WritableSignal } from '@angular/core';
+import { Component, computed, Injectable, Signal, WritableSignal } from '@angular/core';
 import { StateContext, StateExtend } from '../src/lib/models';
 import { StateAction, StateDefinition, StateObserve, StateSelect } from '../src/lib/decorators';
 import { StatesHelper } from '../src/lib/helpers/states-helper';
 import { StateManagerService } from '../src/lib/state-manager.service';
+import { StateCrudData, StateCrudDefinition, StateCrudExtend } from '../index';
 
 export interface UserInterface {
   id: number,
   name: string,
+  valid?: boolean
 }
 
 export interface ExampleStateInterface extends ValueRecord {
@@ -16,7 +18,8 @@ export interface ExampleStateInterface extends ValueRecord {
   aBooleanValue: boolean;
 }
 
-export const exampleStateName = 'ExampleState'
+export const exampleStateName = 'Example'
+export const userStateName = 'Users'
 export const exampleStorageName = `${ StatesHelper.prefix }${ exampleStateName }`;
 export const aStringValueDefault = 'init';
 export const anObjectValueDefault = null;
@@ -87,6 +90,27 @@ export class ExampleState extends StateExtend {
   }
 }
 
+interface UserStateInterface extends StateCrudData<UserInterface> {
+
+}
+
+@StateCrudDefinition({
+  defaults: {
+    all: [],
+    lastUpdated: null
+  },
+  determineArrayIndexFn: () => 'id',
+  showLog: true,
+  enableLocalStorage: true
+})
+export class UserState extends StateCrudExtend<UserState, UserStateInterface, UserInterface> {
+  override stateKey = userStateName;
+}
+
+@Component({
+  standalone: true,
+  template: ''
+})
 export class ExampleComponent {
   @StateObserve(ExampleState, ExampleState.aStringValueSelector)
   aStringValueObserver!: WritableSignal<string>;
@@ -96,6 +120,9 @@ export class ExampleComponent {
 
   @StateObserve(ExampleState, ExampleState.aBooleanValueSelector)
   aBooleanValueObserver!: WritableSignal<boolean>;
+
+  @StateObserve(UserState, UserState.all)
+  users!: WritableSignal<UserInterface[]>;
 
   aStringValueComputed: Signal<string>;
 
@@ -126,6 +153,7 @@ export class ExampleComponent {
   }
 }
 
+@Injectable()
 export class UserService {
   constructor(private stateManager: StateManagerService) {
   }

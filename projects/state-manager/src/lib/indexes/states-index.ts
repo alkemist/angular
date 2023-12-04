@@ -12,71 +12,75 @@ import { Type, WritableSignal } from '@angular/core';
 import { StateConfiguration } from '../models/state-configuration.interface';
 import { StateActionClass } from '../models/state-action-class.interface';
 
-export class StatesIndex<M extends StateManager = StateManager, STATE extends ValueRecord = any, CONTEXT extends StateContext<STATE> = any> {
-  protected states = new Map<string, M>();
+export class StatesIndex<
+  MANAGER extends StateManager = StateManager,
+  DATA extends ValueRecord = any,
+  CONTEXT extends StateContext<DATA> = any
+> {
+  protected states = new Map<string, MANAGER>();
 
   constructor(
-    private stateManagerFactory: Type<M>,
+    private stateManagerFactory: Type<MANAGER>,
     private stateContextFactory: Type<CONTEXT>
   ) {
   }
 
-  registerSelect<C extends StateExtend, S extends ValueRecord, T>(
-    stateClass: StateExtendClass<C>,
+  registerSelect<STATE extends StateExtend, DATA extends ValueRecord, ITEM>(
+    stateClass: StateExtendClass<STATE>,
     selectKey: string,
-    selectFunction: StateSelectFunction<S, T>,
+    selectFunction: StateSelectFunction<DATA, ITEM>,
     path?: ValueKey | ValueKey[]
   ) {
     const stateKey = stateClass.getStateKey();
-    let map = this.getOrCreate<C, S>(stateKey);
+    let map = this.getOrCreate<STATE, DATA>(stateKey);
 
     map.setSelect(selectKey, selectFunction, path);
   }
 
-  registerAction<A extends Object, C extends StateExtend, CO extends StateContext<S>, S extends ValueRecord, T>(
-    state: C,
+  registerAction<STATE extends StateExtend, CONTEXT extends StateContext<DATA>, DATA extends ValueRecord, T>(
+    state: STATE,
     action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
-    actionFunction: StateActionFunction<S, CO>,
+    actionFunction: StateActionFunction<DATA, CONTEXT>,
   ) {
-    const stateKey = (state.constructor as StateExtendClass<C>).getStateKey();
-    let map = this.getOrCreate<C, S>(stateKey);
+    const stateKey = (state.constructor as StateExtendClass<STATE>).getStateKey();
+    let map = this.getOrCreate<STATE, DATA>(stateKey);
 
     map.setAction(action, actionFunction as StateActionFunction);
   }
 
-  registerObserver<C extends StateExtend, S extends ValueRecord, T>(
-    stateClass: StateExtendClass<C>,
+  registerObserver<STATE extends StateExtend, DATA extends ValueRecord, ITEM>(
+    stateClass: StateExtendClass<STATE>,
     selectKey: string,
     observerKey: string,
-    observer: WritableSignal<T>
+    observer: WritableSignal<ITEM>
   ) {
     const stateKey = stateClass.getStateKey();
-    let map = this.getOrCreate<C, S>(stateKey);
+    let map = this.getOrCreate<STATE, DATA>(stateKey);
 
     map.setObserver(stateKey, selectKey, observerKey, observer);
   }
 
-  registerState<C extends StateExtend, S extends ValueRecord>(
-    stateClass: StateExtendClass<C>,
-    configuration: StateConfiguration<S>
+  registerState<STATE extends StateExtend, DATA extends ValueRecord>(
+    stateClass: StateExtendClass<STATE>,
+    configuration: StateConfiguration<DATA>
   ) {
     const stateKey = stateClass.getStateKey();
-    let map = this.getOrCreate<C, S>(stateKey);
+    let map = this.getOrCreate<STATE, DATA>(stateKey);
 
     map.initContext(stateKey, configuration);
   }
 
-  getStateByKey<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
-    return this.states.get(stateKey) as M;
+  getStateByKey(stateKey: string) {
+    return this.states.get(stateKey) as MANAGER;
   }
 
-  dispatch<C extends StateExtend, S extends ValueRecord>(
-    stateClass: StateExtendClass<C>,
+  dispatch<STATE extends StateExtend, DATA extends ValueRecord>(
+    stateClass: StateExtendClass<STATE>,
     actions: StateActionClass[]
   ) {
     //const stateKeysToUpdate: string[] = [];
     const stateKey = stateClass.getStateKey();
-    const state = this.getStateByKey<C, S>(stateKey);
+    const state = this.getStateByKey(stateKey);
 
     /*actions.forEach(action => {
       const actionKey = action.constructor.name;
@@ -110,9 +114,10 @@ export class StatesIndex<M extends StateManager = StateManager, STATE extends Va
     this.states.delete(stateKey);
   }
 
-  protected getOrCreate<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
+  protected getOrCreate<STATE extends StateExtend, DATA extends ValueRecord>
+  (stateKey: string) {
     if (this.hasState(stateKey)) {
-      return this.getStateByKey<C, S>(stateKey)
+      return this.getStateByKey(stateKey)
     }
 
     const state = new this.stateManagerFactory(this.stateContextFactory);

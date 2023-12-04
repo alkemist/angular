@@ -1,7 +1,7 @@
 import { StateManager } from "../managers/state-manager";
 import { StatesIndex } from '../indexes/states-index';
 import { StateCrudManager } from '../managers/state-crud-manager';
-import { StateContext, StateCrud, StateCrudContext, StateCrudExtend, StateExtend } from '../models';
+import { StateContext, StateCrudContext, StateCrudData, StateCrudExtend, StateExtend } from '../models';
 import { ValueKey, ValueRecord } from '@alkemist/smart-tools';
 import { StateExtendClass } from '../models/state-extend-class.type';
 import { StateSelectFunction } from '../models/state-select-function.type';
@@ -21,107 +21,119 @@ export abstract class StatesHelper {
   private static basicStates = new StatesIndex(StateManager, StateContext);
   private static crudStates = new StatesCrudIndex(StateCrudManager, StateCrudContext);
 
-  static getState<C extends StateExtend, S extends ValueRecord>(stateKey: string) {
-    return this.getIndex(stateKey).getStateByKey(stateKey);
+  static getState<MANAGER extends StateManager>(stateKey: string) {
+    return this.getIndex(stateKey).getStateByKey(stateKey) as MANAGER;
   }
 
-  static registerSelect<C extends StateExtend, S extends ValueRecord, T>(
-    stateClass: StateExtendClass<C>,
+  static registerSelect<STATE extends StateExtend, DATA extends ValueRecord, ITEM>(
+    stateClass: StateExtendClass<STATE>,
     selectKey: string,
-    selectFunction: StateSelectFunction<S, T>,
+    selectFunction: StateSelectFunction<DATA, ITEM>,
     path?: ValueKey | ValueKey[]
   ) {
     const stateKey = stateClass.getStateKey();
     return this.getIndex(stateKey).registerSelect(stateClass, selectKey, selectFunction, path);
   }
 
-  static registerAction<A extends Object, C extends StateExtend, CO extends StateContext<S>, S extends ValueRecord, T>(
-    state: C,
-    action: StateActionWithPayloadDefinition<T> | StateActionWithoutPayloadDefinition,
-    actionFunction: StateActionFunction<S, CO>,
+  static registerAction<STATE extends StateExtend, CONTEXT extends StateContext<DATA>, DATA extends ValueRecord, ITEM>(
+    state: STATE,
+    action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition,
+    actionFunction: StateActionFunction<DATA, CONTEXT>,
   ) {
-    const stateKey = (state.constructor as StateExtendClass<C>).getStateKey();
+    const stateKey = (state.constructor as StateExtendClass<STATE>).getStateKey();
     return this.getIndex(stateKey).registerAction(state, action, actionFunction);
   }
 
-  static registerObserver<C extends StateExtend, S extends ValueRecord, T>(
-    stateClass: StateExtendClass<C>,
+  static registerObserver<STATE extends StateExtend, ITEM>(
+    stateClass: StateExtendClass<STATE>,
     selectKey: string,
     observerKey: string,
-    observer: WritableSignal<T>
+    observer: WritableSignal<ITEM>
   ) {
     const stateKey = stateClass.getStateKey();
     return this.getIndex(stateKey).registerObserver(stateClass, selectKey, observerKey, observer);
   }
 
-  static registerState<C extends StateExtend, S extends ValueRecord>(
-    stateClass: StateExtendClass<C>,
-    configuration: StateConfiguration<S>
+  static registerState<STATE extends StateExtend, DATA extends ValueRecord>(
+    stateClass: StateExtendClass<STATE>,
+    configuration: StateConfiguration<DATA>
   ) {
     const stateKey = stateClass.getStateKey();
     return this.getIndex(stateKey).registerState(stateClass, configuration);
   }
 
-  static registerStateCrud<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    configuration: StateCrudConfiguration<S, I>
+  static registerStateCrud<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    configuration: StateCrudConfiguration<DATA, ITEM>
   ) {
     this.crudStates.registerState(stateClass, configuration);
 
     const stateKey = stateClass.getStateKey();
-    const stateManager = this.basicStates.getStateByKey(stateKey);
+    const oldStateManager = this.basicStates.getStateByKey(stateKey);
 
-    this.crudStates.import(stateKey, stateManager);
+    this.crudStates.init(stateKey, oldStateManager);
+
     this.basicStates.removeState(stateKey);
   }
 
-  static dispatch<C extends StateExtend, S extends ValueRecord>(
-    stateClass: StateExtendClass<C>,
+  static dispatch<STATE extends StateExtend>(
+    stateClass: StateExtendClass<STATE>,
     actions: StateActionClass[]
   ) {
     const stateKey = stateClass.getStateKey();
     return this.getIndex(stateKey).dispatch(stateClass, actions);
   }
 
-  static dispatchFill<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I[]
+  static dispatchFill<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM[]
   ) {
     return this.crudStates.dispatchFill(stateClass, payload)
   }
 
-  static dispatchAdd<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I
+  static dispatchAdd<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM
   ) {
     return this.crudStates.dispatchAdd(stateClass, payload)
   }
 
-  static dispatchReplace<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I
+  static dispatchReplace<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM
   ) {
     return this.crudStates.dispatchReplace(stateClass, payload)
   }
 
-  static dispatchUpdate<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: Partial<I>
+  static dispatchUpdate<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: Partial<ITEM>
   ) {
     return this.crudStates.dispatchUpdate(stateClass, payload)
   }
 
-  static dispatchRemove<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I
+  static dispatchRemove<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM
   ) {
     return this.crudStates.dispatchRemove(stateClass, payload)
   }
 
-  static dispatchReset<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
+  static dispatchReset<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
   ) {
     return this.crudStates.dispatchReset(stateClass)
+  }
+
+  static selectAll<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>
+  ) {
+    return this.crudStates.selectAll<STATE, DATA, ITEM>(stateClass)
+  }
+
+  static selectLastUpdateDate<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>
+  (stateClass: StateExtendClass<STATE>) {
+    return this.crudStates.selectLastUpdateDate<STATE, DATA, ITEM>(stateClass)
   }
 
   private static getIndex(stateKey: string) {

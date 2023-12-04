@@ -1,46 +1,60 @@
-import { StateCrud, StateCrudContext, StateExtend } from '../models';
+import { StateCrudContext, StateCrudData } from '../models';
 import { StateManager } from './state-manager';
-import { generateStateCrudFunctions } from '../models/state-crud-functions.const';
+import { generateStateCrudActions } from '../models/state-crud-actions.const';
 import { ArrayHelper, StringHelper } from '@alkemist/smart-tools';
 import { StateCrudActionEnum } from '../models/state-crud-action.type';
+import { StateSelect } from '../models/state-select';
+import { generateStateCrudSelects } from '../models/state-crud-selects.const';
 
-export class StateCrudManager<C extends StateExtend = StateExtend, I = any, S extends StateCrud<I> = StateCrud<I>>
-  extends StateManager<C, S, StateCrudContext<S, I>, I> {
-  import(stateManager: StateManager) {
-    this.selects = stateManager['selects'];
-    this.actions = stateManager['actions'];
+export class StateCrudManager<
+  ITEM = any,
+  DATA extends StateCrudData<ITEM> = StateCrudData<ITEM>
+>
+  extends StateManager<ITEM, DATA, StateCrudContext<DATA, ITEM>> {
+  init(stateManager: StateManager) {
+    if (stateManager) {
+      this.selects = stateManager['selects'];
+      this.actions = stateManager['actions'];
+    }
 
-    ArrayHelper.recordToList(generateStateCrudFunctions())
+    ArrayHelper.recordToList(generateStateCrudActions())
       .forEach((crud) => {
         this.actions.set(crud.key, {
           log: StringHelper.capitalize(crud.key),
           fn: crud.value
         });
       });
+
+    ArrayHelper.recordToList(generateStateCrudSelects())
+      .forEach((crud) => {
+        this.selects.set(crud.key,
+          new StateSelect(crud.value, crud.key)
+        );
+      });
   }
 
-  dispatchFill(payload: I[]) {
+  dispatchFill(payload: ITEM[]) {
     this.apply(StateCrudActionEnum.Fill, payload)
     return this;
   }
 
-  dispatchAdd(payload: I) {
+  dispatchAdd(payload: ITEM) {
     this.apply(StateCrudActionEnum.Add, payload)
     return this;
   }
 
-  dispatchReplace(payload: I) {
-    this.apply(StateCrudActionEnum.Add, payload)
+  dispatchReplace(payload: ITEM) {
+    this.apply(StateCrudActionEnum.Replace, payload)
     return this;
   }
 
-  dispatchUpdate(payload: Partial<I>) {
-    this.apply(StateCrudActionEnum.Add, payload)
+  dispatchUpdate(payload: Partial<ITEM>) {
+    this.apply(StateCrudActionEnum.Update, payload)
     return this;
   }
 
-  dispatchRemove(payload: I) {
-    this.apply(StateCrudActionEnum.Add, payload)
+  dispatchRemove(payload: ITEM) {
+    this.apply(StateCrudActionEnum.Remove, payload)
     return this;
   }
 

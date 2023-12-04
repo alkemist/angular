@@ -2,7 +2,6 @@ import { ValueRecord } from '@alkemist/smart-tools'
 import { StateAction, StateContext, StateDefinition, StateExtend, StateSelect } from '@alkemist/ngx-state-manager';
 import { GroupInterface } from './group.interface';
 import { Group as GroupAction } from "./group.action";
-import { UserInterface } from '../user';
 
 
 interface GroupStateInterface extends ValueRecord {
@@ -17,7 +16,7 @@ namespace Group {
     showLog: true,
     enableLocalStorage: true
   })
-  export class Store extends StateExtend {
+  export class State extends StateExtend {
     stateKey = 'Groups';
 
     @StateSelect('all')
@@ -31,7 +30,7 @@ namespace Group {
     }
 
     @StateAction(GroupAction.ActionReset)
-    reset(context: StateContext<GroupStateInterface>, payload: UserInterface) {
+    reset(context: StateContext<GroupStateInterface>) {
       context.patchState({
         all: [],
       })

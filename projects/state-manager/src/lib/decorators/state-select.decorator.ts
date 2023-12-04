@@ -5,11 +5,15 @@ import { StateSelectFunction } from '../models/state-select-function.type';
 import { StateExtendClass } from '../models/state-extend-class.type';
 import { StateExtend } from '../models';
 
-export function StateSelect<C extends StateExtend, S extends ValueRecord, T>(pathForCheckUpdated?: ValueKey | ValueKey[]) {
+export function StateSelect<
+  STATE extends StateExtend,
+  DATA extends ValueRecord,
+  ITEM
+>(pathForCheckUpdated?: ValueKey | ValueKey[]) {
   return <MethodDecorator>function (
-    target: StateExtendClass<C>,
+    target: StateExtendClass<STATE>,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<StateSelectFunction<S, T>>
+    descriptor: TypedPropertyDescriptor<StateSelectFunction<DATA, ITEM>>
   ) {
     /*console.log('registerSelect',
       target.getStateKey(),
@@ -17,7 +21,7 @@ export function StateSelect<C extends StateExtend, S extends ValueRecord, T>(pat
       target
     )*/
 
-    StatesHelper.registerSelect<C, S, T>(
+    StatesHelper.registerSelect<STATE, DATA, ITEM>(
       target,
       propertyKey,
       descriptor.value!,

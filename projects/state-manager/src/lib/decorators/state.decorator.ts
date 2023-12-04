@@ -2,24 +2,31 @@ import "reflect-metadata";
 import { StateConfiguration, StateCrudConfiguration } from "../models/state-configuration.interface.js";
 import { ValueRecord } from "@alkemist/smart-tools";
 import { StatesHelper } from '../helpers/states-helper';
-import { StateCrud, StateCrudExtend, StateExtend } from '../models';
+import { StateCrudData, StateCrudExtend, StateExtend } from '../models';
 import { StateExtendClass } from '../models/state-extend-class.type';
 
-export function StateDefinition<C extends StateExtend, S extends ValueRecord>(configuration: StateConfiguration<S>) {
-  return <ClassDecorator>function (target: StateExtendClass<C>) {
+export function StateDefinition<
+  STATE extends StateExtend,
+  DATA extends ValueRecord
+>(configuration: StateConfiguration<DATA>) {
+  return <ClassDecorator>function (target: StateExtendClass<STATE>) {
     //console.log('registerState', target.getStateKey(), target)
 
-    StatesHelper.registerState<C, S>(target, configuration);
+    StatesHelper.registerState<STATE, DATA>(target, configuration);
 
     return Reflect.getMetadata(Symbol("StateDefinition"), target);
   };
 }
 
-export function StateCrudDefinition<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(configuration: StateCrudConfiguration<S, I>) {
-  return <ClassDecorator>function (target: StateExtendClass<C>) {
+export function StateCrudDefinition<
+  STATE extends StateCrudExtend<STATE, DATA, ITEM>,
+  DATA extends StateCrudData<ITEM>,
+  ITEM
+>(configuration: StateCrudConfiguration<DATA, ITEM>) {
+  return <ClassDecorator>function (target: StateExtendClass<STATE>) {
     //console.log('registerStateCrud', stateKey, target.getStateKey(), target)
 
-    StatesHelper.registerStateCrud<C, S, I>(target, configuration);
+    StatesHelper.registerStateCrud<STATE, DATA, ITEM>(target, configuration);
 
     return Reflect.getMetadata(Symbol("StateCrudDefinition"), target);
   };

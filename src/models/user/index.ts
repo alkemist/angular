@@ -9,7 +9,7 @@ export namespace User {
 
   }
 
-  export class Store extends UserStore.Store {
+  export class State extends UserStore.State {
 
   }
 }

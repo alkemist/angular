@@ -9,7 +9,7 @@ export namespace Group {
 
   }
 
-  export class Store extends GroupStore.Store {
+  export class State extends GroupStore.State {
 
   }
 

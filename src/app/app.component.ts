@@ -9,10 +9,10 @@ import { Group, GroupInterface } from '../models/group';
   styleUrls: [ './app.component.scss' ]
 })
 export class AppComponent {
-  @StateObserve(User.Store, User.Store.users)
+  @StateObserve(User.State, User.State.all)
   users!: WritableSignal<UserInterface[]>;
 
-  @StateObserve(Group.Store, Group.Store.groups)
+  @StateObserve(Group.State, Group.State.groups)
   groups!: WritableSignal<GroupInterface[]>;
 
   constructor(private store: StateManagerService) {
@@ -25,7 +25,11 @@ export class AppComponent {
       name: `username ${ id }`
     };
 
-    this.store.dispatchAdd(User.Store, user);
+    this.store.dispatchAdd(User.State, user);
+  }
+
+  removeUser(user: User.Model) {
+    this.store.dispatchRemove(User.State, user);
   }
 
   addGroup() {
@@ -35,22 +39,22 @@ export class AppComponent {
       name: `group ${ id }`
     };
 
-    this.store.dispatch(Group.Store, new Group.ActionAdd(group))
+    this.store.dispatch(Group.State, new Group.ActionAdd(group))
   }
 
   resetUsers() {
-    this.store.dispatchReset(User.Store)
+    this.store.dispatchReset(User.State)
   }
 
   resetGroups() {
-    this.store.dispatch(Group.Store, new Group.ActionReset())
+    this.store.dispatch(Group.State, new Group.ActionReset())
   }
 
   debugUsers() {
-    console.log("Users", this.store.debug(User.Store));
+    console.log("Users", this.store.debug(User.State));
   }
 
   debugGroups() {
-    console.log("Groups", this.store.debug(Group.Store));
+    console.log("Groups", this.store.debug(Group.State));
   }
 }

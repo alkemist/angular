@@ -1,62 +1,80 @@
 import { StatesIndex } from './states-index';
 import { StateCrudManager } from '../managers/state-crud-manager';
 import { StateManager } from '../managers/state-manager';
-import { StateCrud, StateCrudExtend } from '../models';
+import { StateCrudData, StateCrudExtend } from '../models';
 import { StateExtendClass } from '../models/state-extend-class.type';
+import { UnknownCrudState } from '../models/unknown-crud-state.error';
+import { StateCrudSelectEnum } from '../models/state-crud-select.type';
 
 export class StatesCrudIndex extends StatesIndex<StateCrudManager> {
   protected override states = new Map<string, StateCrudManager>();
 
-  import(stateKey: string, stateManager: StateManager) {
+  init(stateKey: string, stateManager: StateManager) {
     const currentState = this.getOrCreate(stateKey);
 
-    currentState.import(stateManager);
+    currentState.init(stateManager);
   }
 
-  dispatchFill<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I[],
+  dispatchFill<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM[],
   ) {
     this.getState(stateClass).dispatchFill(payload).update()
   }
 
-  dispatchAdd<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I,
+  dispatchAdd<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM,
   ) {
     this.getState(stateClass).dispatchAdd(payload).update()
   }
 
-  dispatchReplace<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I,
+  dispatchReplace<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM,
   ) {
     this.getState(stateClass).dispatchReplace(payload).update()
   }
 
-  dispatchUpdate<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: Partial<I>,
+  dispatchUpdate<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: Partial<ITEM>,
   ) {
     this.getState(stateClass).dispatchUpdate(payload).update()
   }
 
-  dispatchRemove<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
-    payload: I,
+  dispatchRemove<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
+    payload: ITEM,
   ) {
     this.getState(stateClass).dispatchRemove(payload).update()
   }
 
-  dispatchReset<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>(
-    stateClass: StateExtendClass<C>,
+  dispatchReset<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>(
+    stateClass: StateExtendClass<STATE>,
   ) {
     this.getState(stateClass).dispatchReset().update()
   }
 
-  private getState<C extends StateCrudExtend<C, S, I>, S extends StateCrud<I>, I>
-  (stateClass: StateExtendClass<C>) {
+  selectAll<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>
+  (stateClass: StateExtendClass<STATE>) {
+    return this.getState(stateClass).select(StateCrudSelectEnum.All) as ITEM[]
+  }
+
+  selectLastUpdateDate<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>
+  (stateClass: StateExtendClass<STATE>) {
+    return this.getState(stateClass).select(StateCrudSelectEnum.LastUpdated) as Date | null
+  }
+
+  private getState<STATE extends StateCrudExtend<STATE, DATA, ITEM>, DATA extends StateCrudData<ITEM>, ITEM>
+  (stateClass: StateExtendClass<STATE>) {
     const stateKey = stateClass.getStateKey();
-    return this.getStateByKey<C, S>(stateKey);
+    const state = this.getStateByKey(stateKey);
+
+    if (!state) {
+      throw new UnknownCrudState(stateKey);
+    }
+
+    return state;
   }
 }

@@ -7,16 +7,20 @@ import {
   ExampleState,
   exampleStorageName,
   UserInterface,
-  UserService
+  UserService,
+  UserState
 } from './test-data.js';
-import { effect, Injector } from '@angular/core';
 import { StateManagerService } from '../src/lib/state-manager.service';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { StateManagerModule } from '../index';
 import { UnknownAction } from '../src/lib/models/unknown-action.error';
-import { setUpSignalTesting, SignalTesting } from '../../../test/setup-effect';
-
+import { effect, Injector } from '@angular/core';
 
 describe("State Decorator", () => {
-  let signalTesting: SignalTesting;
+  let component: ExampleComponent;
+  let fixture: ComponentFixture<ExampleComponent>;
+  let stateManager: StateManagerService;
+  let injector: Injector;
 
   let onChangeSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
@@ -25,18 +29,20 @@ describe("State Decorator", () => {
   let setLocalStorageSpy: jest.SpyInstance;
   let getLocalStorageSpy: jest.SpyInstance;
 
-  let exampleComponent: ExampleComponent;
-  let userService: UserService;
-  let stateManager: StateManagerService;
-
-  const aStringValueTest = 'test';
-  const aObjectValueTest: UserInterface = {
-    name: 'user test',
-    id: 1
-  }
-
   beforeEach(() => {
-    signalTesting = setUpSignalTesting();
+    TestBed.configureTestingModule({
+      imports: [ ExampleComponent, StateManagerModule ],
+      providers: [
+        UserService
+      ]
+    });
+    fixture = TestBed.createComponent(ExampleComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    stateManager = TestBed.inject(StateManagerService);
+    injector = TestBed.inject(Injector);
+
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     consoleGroupBeginSpy = jest.spyOn(console, 'group').mockImplementation();
     consoleGroupEndSpy = jest.spyOn(console, 'groupEnd').mockImplementation();
@@ -44,39 +50,46 @@ describe("State Decorator", () => {
     setLocalStorageSpy = jest.spyOn(localStorage, 'setItem');
     getLocalStorageSpy = jest.spyOn(localStorage, 'getItem');
 
-    stateManager = new StateManagerService();
-    userService = new UserService(stateManager);
-    exampleComponent = new ExampleComponent(stateManager, userService);
-    onChangeSpy = jest.spyOn(exampleComponent, 'onChange');
-  })
+    onChangeSpy = jest.spyOn(component, 'onChange');
+  });
 
-  it('should dispatch string', () => {
-    signalTesting.runInTestingInjectionContext((injector: Injector) => {
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  describe('basic state', () => {
+    const aStringValueTest = 'test';
+    const aObjectValueTest: UserInterface = {
+      name: 'user test',
+      id: 1
+    }
+
+    it('should dispatch string', () => {
       let aStringValueEffect = '';
 
       effect(
         () => {
-          aStringValueEffect = exampleComponent.aStringValueObserver();
+          aStringValueEffect = component.aStringValueObserver();
         },
         { injector }
       );
-      signalTesting.flushEffects();
+      fixture.detectChanges();
 
-      expect(exampleComponent.aStringValueObserver()).toEqual(aStringValueDefault);
-      expect(exampleComponent.getStringValue()).toEqual(aStringValueDefault);
-      expect(exampleComponent.aStringValueComputed()).toEqual(aStringValueDefault);
-      expect(exampleComponent.aBooleanValueObserver()).toEqual(aBooleanValueDefault);
+      expect(component.aStringValueObserver()).toEqual(aStringValueDefault);
+      expect(component.getStringValue()).toEqual(aStringValueDefault);
+      expect(component.aStringValueComputed()).toEqual(aStringValueDefault);
+      expect(component.aBooleanValueObserver()).toEqual(aBooleanValueDefault);
       expect(aStringValueEffect).toEqual(aStringValueDefault);
       expect(onChangeSpy).toBeCalledTimes(1);
 
       onChangeSpy.mockReset();
       setLocalStorageSpy.mockReset();
-      exampleComponent.dispatchStringValue(aStringValueTest);
-      signalTesting.flushEffects();
+      component.dispatchStringValue(aStringValueTest);
+      fixture.detectChanges();
 
-      expect(exampleComponent.aStringValueObserver()).toEqual(aStringValueTest);
-      expect(exampleComponent.getStringValue()).toEqual(aStringValueTest);
-      expect(exampleComponent.aStringValueComputed()).toEqual(aStringValueTest);
+      expect(component.aStringValueObserver()).toEqual(aStringValueTest);
+      expect(component.getStringValue()).toEqual(aStringValueTest);
+      expect(component.aStringValueComputed()).toEqual(aStringValueTest);
       expect(aStringValueEffect).toEqual(aStringValueTest);
       expect(onChangeSpy).toBeCalledTimes(1);
       expect(setLocalStorageSpy).toBeCalledTimes(1);
@@ -89,46 +102,172 @@ describe("State Decorator", () => {
       );
 
       onChangeSpy.mockReset();
-      exampleComponent.dispatchStringValue(aStringValueTest);
+      component.dispatchStringValue(aStringValueTest);
 
-      expect(onChangeSpy).not.toBeCalled();
+      expect(onChangeSpy).not.toHaveBeenCalled();
       expect(consoleGroupBeginSpy).toBeCalledTimes(2);
       expect(consoleGroupEndSpy).toBeCalledTimes(2);
       expect(consoleLogSpy).toBeCalledTimes(2 * 3);
+      //})
+    })
+
+    it('should dispatch object', async () => {
+      expect(component.anObjectValueObserver()).toEqual(anObjectValueDefault);
+
+      await component.dispatchObjectValue(aObjectValueTest);
+
+      expect(component.anObjectValueObserver()).toEqual(aObjectValueTest);
+      expect(setLocalStorageSpy).toBeCalledTimes(1);
+      expect(setLocalStorageSpy).toBeCalledWith(exampleStorageName,
+        `{` +
+        `\"aStringValue\":\"${ aStringValueTest }\",` +
+        `\"anObjectValue\":{\"name\":\"${ aObjectValueTest.name }\",\"id\":${ aObjectValueTest.id }},` +
+        `\"aBooleanValue\":${ aBooleanValueDefault }` +
+        `}`
+      );
+
+      expect(consoleGroupBeginSpy).toBeCalledTimes(1);
+      expect(consoleGroupEndSpy).toBeCalledTimes(1);
+      expect(consoleLogSpy).toBeCalledTimes(3);
+    });
+
+    it('should throw errors', () => {
+      expect(() => {
+        stateManager.dispatch(ExampleState, new Example.aUnknownValueAction(''));
+      }).toThrow(new UnknownAction('aUnknownValueAction'));
     })
   })
 
-  it('should dispatch object', async () => {
-    expect(exampleComponent.anObjectValueObserver()).toEqual(anObjectValueDefault);
+  describe('crud state', () => {
+    const user1: UserInterface = { id: 1, name: 'name 1', valid: true };
+    const user2: UserInterface = { id: 2, name: 'name 2', valid: true };
+    const user3: UserInterface = { id: 3, name: 'name 3', valid: true };
+    const user3updated: UserInterface = { id: 3, name: 'name 3', valid: false };
+    const user3replaced: UserInterface = { id: 3, name: 'name 3 bis' };
+    let users: UserInterface[] = [];
 
-    await exampleComponent.dispatchObjectValue(aObjectValueTest);
+    it('should fill', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
 
-    expect(exampleComponent.anObjectValueObserver()).toEqual(aObjectValueTest);
-    expect(setLocalStorageSpy).toBeCalledTimes(1);
-    expect(setLocalStorageSpy).toBeCalledWith(exampleStorageName,
-      `{` +
-      `\"aStringValue\":\"${ aStringValueTest }\",` +
-      `\"anObjectValue\":{\"name\":\"${ aObjectValueTest.name }\",\"id\":${ aObjectValueTest.id }},` +
-      `\"aBooleanValue\":${ aBooleanValueDefault }` +
-      `}`
-    );
+      expect(users).toEqual([]);
+      expect(stateManager.selectAll(UserState)).toEqual([]);
 
-    expect(consoleGroupBeginSpy).toBeCalledTimes(1);
-    expect(consoleGroupEndSpy).toBeCalledTimes(1);
-    expect(consoleLogSpy).toBeCalledTimes(3);
+      stateManager.dispatchFill(UserState, [ user1, user2 ]);
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user2 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user2 ]);
+    })
+
+    it('should add', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user2 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user2 ]);
+
+      stateManager.dispatchAdd(UserState, user3);
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user2, user3 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user2, user3 ]);
+    });
+
+    it('should remove', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user2, user3 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user2, user3 ]);
+
+      stateManager.dispatchRemove(UserState, user2);
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3 ]);
+    });
+
+    it('should update', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3 ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3 ]);
+
+      stateManager.dispatchUpdate(UserState, { id: 3, valid: false });
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3updated ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3updated ]);
+    });
+
+    it('should replace', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3updated ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3updated ]);
+
+      stateManager.dispatchReplace(UserState, user3replaced);
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3replaced ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3replaced ]);
+    });
+
+    it('should reset', () => {
+      effect(
+        () => {
+          users = component.users();
+        },
+        { injector }
+      );
+      fixture.detectChanges();
+
+      expect(users).toEqual([ user1, user3replaced ]);
+      expect(stateManager.selectAll(UserState)).toEqual([ user1, user3replaced ]);
+
+      stateManager.dispatchReset(UserState);
+      fixture.detectChanges();
+
+      expect(users).toEqual([]);
+      expect(stateManager.selectAll(UserState)).toEqual([]);
+    });
   });
 
-  it('should throw errors', () => {
-    expect(() => {
-      stateManager.dispatch(ExampleState, new Example.aUnknownValueAction(''));
-    }).toThrow(new UnknownAction('aUnknownValueAction'));
-  })
 
   afterEach(() => {
-    onChangeSpy.mockReset();
     consoleLogSpy.mockReset();
     consoleGroupBeginSpy.mockReset();
     consoleGroupEndSpy.mockReset();
     setLocalStorageSpy.mockReset();
+
+    onChangeSpy.mockReset();
   })
 });

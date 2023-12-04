@@ -4,7 +4,7 @@ import { StateConfiguration } from "../models/state-configuration.interface";
 import { StateSelectFunction } from "../models/state-select-function.type";
 import { StateActionFunction } from "../models/state-action-function.type";
 import { Type, WritableSignal } from "@angular/core";
-import { StateContext, StateExtend } from '../models';
+import { StateContext } from '../models';
 import { CompareEngine } from '@alkemist/compare-engine';
 import { NotInitializedStateError } from '../models/not-initialized-state.error';
 import { UnknownSelect } from '../models/unknown-select.error';
@@ -16,25 +16,24 @@ import { UnknownAction } from '../models/unknown-action.error';
 import { StatesHelper } from '../helpers/states-helper';
 
 export class StateManager<
-  CLASS extends StateExtend = any,
-  STATE extends ValueRecord = any,
-  CONTEXT extends StateContext<STATE> = any,
-  ITEM = any
+  ITEM = any,
+  DATA extends ValueRecord = any,
+  CONTEXT extends StateContext<DATA> = any,
 > {
-  protected selects = new SmartMap<StateSelect<STATE>>();
+  protected selects = new SmartMap<StateSelect<DATA>>();
   protected actions = new SmartMap<{
     log: string,
-    fn: StateActionFunction<STATE, CONTEXT>
+    fn: StateActionFunction<DATA, CONTEXT>
   }>();
-  protected configuration!: StateConfiguration<STATE>;
-  protected state!: CompareEngine<STATE>;
+  protected configuration!: StateConfiguration<DATA>;
+  protected compareEngine!: CompareEngine<DATA>;
   protected stateKey!: string;
   protected storageKey!: string;
 
   constructor(private contextFactory: Type<CONTEXT>) {
   }
 
-  initContext(stateKey: string, configuration: StateConfiguration<STATE>) {
+  initContext(stateKey: string, configuration: StateConfiguration<DATA>) {
     this.stateKey = stateKey;
     this.storageKey = `${ StatesHelper.prefix }${ this.stateKey }`;
 
@@ -52,7 +51,7 @@ export class StateManager<
       }
     }
 
-    this.state = new CompareEngine<STATE>(
+    this.compareEngine = new CompareEngine<DATA>(
       configuration.determineArrayIndexFn,
       defaultsValue,
       defaultsValue,
@@ -68,16 +67,16 @@ export class StateManager<
   }
 
   getState(stateKey?: string) {
-    if (!this.state) {
+    if (!this.compareEngine) {
       throw new NotInitializedStateError(stateKey ?? 'unknown')
     }
 
-    return <STATE>this.state.rightValue;
+    return <DATA>this.compareEngine.rightValue;
   }
 
   setSelect<T>(
     selectKey: string,
-    selectFunction: StateSelectFunction<STATE, T>,
+    selectFunction: StateSelectFunction<DATA, T>,
     path?: ValueKey | ValueKey[]
   ) {
     const stateSelect = new StateSelect(selectFunction, path);
@@ -99,7 +98,7 @@ export class StateManager<
       .update(this.getState(stateKey))
   }
 
-  setAction(action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<STATE, CONTEXT>) {
+  setAction(action: StateActionWithPayloadDefinition<ITEM> | StateActionWithoutPayloadDefinition, actionFunction: StateActionFunction<DATA, CONTEXT>) {
     this.actions.set(action.name, {
       log: action.log,
       fn: actionFunction
@@ -107,7 +106,7 @@ export class StateManager<
   }
 
   select(selectKey: string): unknown {
-    return (<StateSelect<STATE, ITEM>>this.selects.get(selectKey))
+    return (<StateSelect<DATA, ITEM>>this.selects.get(selectKey))
       .getValue(this.getState())
   }
 
@@ -139,8 +138,8 @@ export class StateManager<
         `[State][${ this.stateKey }] Action "${ action.log }"`,
         [
           ...logs,
-          { title: 'Before', data: TypeHelper.deepClone(this.state.leftValue) },
-          { title: 'After', data: TypeHelper.deepClone(this.state.rightValue) }
+          { title: 'Before', data: TypeHelper.deepClone(this.compareEngine.leftValue) },
+          { title: 'After', data: TypeHelper.deepClone(this.compareEngine.rightValue) }
         ],
         [ ...colors, CONSOLE_LOG_STYLES.grey, CONSOLE_LOG_STYLES.red ]
       )
@@ -151,28 +150,28 @@ export class StateManager<
     this.selects
       .filter((select) =>
         select.path
-          ? !this.state.getRightState(select.path).isEqual
+          ? !this.compareEngine.getRightState(select.path).isEqual
           : true
       )
       .each((select) =>
         select.update(this.getState())
       )
 
-    this.state.rightToLeft();
+    this.compareEngine.rightToLeft();
 
     if (this.configuration.enableLocalStorage) {
       localStorage.setItem(
         this.storageKey,
         JSON.stringify(
-          this.state.leftValue
+          this.compareEngine.leftValue
         )
       );
     }
   }
 
-  protected actionApply(actionFn: StateActionFunction<STATE, CONTEXT>, payload?: ITEM) {
+  protected actionApply(actionFn: StateActionFunction<DATA, CONTEXT>, payload?: ITEM) {
     actionFn.apply(actionFn, [
-      new this.contextFactory(this.state),
+      new this.contextFactory(this.stateKey, this.compareEngine, this.configuration.determineArrayIndexFn),
       payload
     ])
   }
