@@ -1,6 +1,6 @@
 import { ValueRecord } from '@alkemist/smart-tools';
 
-export interface StateCrudData<I> extends ValueRecord {
-  all: I[]
+export interface StateCrudData<ITEM> extends ValueRecord {
+  all: ITEM[]
   lastUpdated: Date | null;
 }

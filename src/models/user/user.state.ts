@@ -9,7 +9,8 @@ interface UserStateInterface extends StateCrudData<UserInterface> {
 namespace User {
   @StateCrudDefinition({
     defaults: {
-      all: []
+      all: [],
+      lastUpdated: null
     },
     determineArrayIndexFn: () => 'id',
     showLog: true,
